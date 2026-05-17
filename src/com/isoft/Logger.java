@@ -2,7 +2,6 @@ package com.isoft;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -107,18 +106,6 @@ public final class Logger {
     private synchronized void print(Severity severity, String message) {
         System.out.println(formatMessage.apply(severity, message));
     }
-
-    /**
-     * Consumer that delegates to {@link #print(Severity, String)}, inheriting
-     * its thread-safety guarantee.
-     *
-     * <p>
-     * This is the only impure operation in the logger. All other fields
-     * are pure functions that delegate here, keeping the side effect isolated
-     * at a single boundary.
-     * </p>
-     */
-    public final BiConsumer<Severity, String> log = this::print;
 
     // ── Partially applied convenience consumers ──────────────────────────────
 
