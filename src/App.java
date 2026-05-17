@@ -35,8 +35,8 @@ public class App {
         Logger logger = Logger.getInstance();
         logger.logInfo.accept("Starting Application");
 
-        TransportStrategy bus = d -> new TransportResult("Bus", 100.0, d, (int) (d * 45 / 7.1));
-        TransportStrategy taxi = d -> new TransportResult("Taxi", 2.5 * d, d, (int) (d / 0.5));
+        TransportStrategy bus = d -> new TransportResult("Bus", 1720.0, d, (int) (d * 45 / 7.1));
+        TransportStrategy taxi = d -> new TransportResult("Taxi", 1363.60 * d, d, (int) (d / 0.5));
         TransportStrategy bicycle = d -> new TransportResult("Bicycle", 0, d, (int) (d / 0.25));
 
         System.out.println(bus.compute(7));
