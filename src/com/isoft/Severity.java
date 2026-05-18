@@ -1,54 +1,68 @@
 package com.isoft;
 
 /**
- * Severity levels for the {@link Logger}, each carrying its associated ANSI
- * color code for color-coded console output.
+ * Niveles de severidad para el {@link Logger}, cada uno asociado a su
+ * correspondiente código de color ANSI para salida coloreada en consola.
  *
- * <h2>Severity / Color Mapping</h2>
+ * <h2>Severidad / Código de colores</h2>
  * <table border="1">
- * <caption>ANSI color codes used by each severity level</caption>
- * <tr><th>Level</th><th>Color</th><th>ANSI Code</th></tr>
- * <tr><td>DEBUG</td><td>Green</td><td>{@code \033[32m}</td></tr>
- * <tr><td>INFO</td><td>Gray</td><td>{@code \033[90m}</td></tr>
- * <tr><td>WARN</td><td>Yellow</td><td>{@code \033[33m}</td></tr>
- * <tr><td>ERROR</td><td>Red</td><td>{@code \033[31m}</td></tr>
+ * <caption>Códigos de color ANSI utilizados por cada nivel de severidad</caption>
+ * <tr><th>Nivel</th><th>Color</th><th>Código ANSI</th></tr>
+ * <tr><td>DEBUG</td><td>Verde</td><td>{@code \033[32m}</td></tr>
+ * <tr><td>INFO</td><td>Gris</td><td>{@code \033[90m}</td></tr>
+ * <tr><td>WARN</td><td>Amarillo</td><td>{@code \033[33m}</td></tr>
+ * <tr><td>ERROR</td><td>Rojo</td><td>{@code \033[31m}</td></tr>
  * </table>
  *
- * <p>Each constant exposes its ANSI escape sequence via the {@link #color}
- * field, which the {@link Logger} prepends to a log line to colorize it.
- * A trailing reset code ({@code \033[0m}) is appended by the logger to
- * ensure subsequent terminal output is not affected.</p>
+ * <p>
+ * Cada constante expone su secuencia de escape ANSI mediante el campo
+ * {@link #color}, el cual el {@link Logger} antepone a una linea del
+ * registrador para colorearla.
+ * El registrador añade una secuencia de reinicio
+ * ({@code \033[0m}) al final para asegurar que salidas posteriores de la
+ * terminal no se vean afectadas.
+ * </p>
  */
 public enum Severity {
 
-    /** Fine-grained diagnostic information, rendered in green. */
+    /** Información de diagnóstico detallada, representada en verde. */
     DEBUG("\u001B[32m"),
 
-    /** General informational messages about normal operation, rendered in gray. */
+    /**
+     * Mensajes informativos generales sobre operación normal, representados en
+     * gris.
+     */
     INFO("\u001B[90m"),
 
     /**
-     * Potentially harmful situations that warrant attention, rendered in yellow.
+     * Situaciones potencialmente dañinas que ameritan atención,
+     * representadas en amarillo.
      */
     WARN("\u001B[33m"),
 
     /**
-     * Error events that may still allow the application to continue, rendered in
-     * red.
+     * Eventos de error que aún pueden permitir que la aplicación continúe
+     * ejecutándose, representados en rojo.
      */
     ERROR("\u001B[31m");
 
     /**
-     * The ANSI escape sequence used to colorize log output for this severity level.
-     * Prepend this to a string and append {@code \033[0m} to apply and then reset
-     * the color.
+     * Secuencia de escape ANSI utilizada para colorear la salida del
+     * registrador correspondiente a éste nivel de severidad.
+     *
+     * <p>
+     * Anteponer ésta secuencia a una cadena de texto y añadir
+     * {@code \033[0m} al final aplica y posteriormente reinicia el color.
+     * </p>
      */
     public final String color;
 
     /**
-     * Constructs a {@code Severity} constant with the given ANSI color code.
+     * Construye una constante {@code Severity} con el código de color ANSI
+     * especificado.
      *
-     * @param color the ANSI escape sequence for this severity level
+     * @param color la secuencia de escape ANSI correspondiente a éste nivel
+     *              de severidad
      */
     Severity(String color) {
         this.color = color;

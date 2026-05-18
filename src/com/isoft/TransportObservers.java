@@ -3,27 +3,32 @@ package com.isoft;
 import java.util.function.Consumer;
 
 /**
- * Factory class for pre-built {@link TransportStrategy.TransportResult}
- * observers, following the
- * <a href="https://en.wikipedia.org/wiki/Observer_pattern">Observer pattern</a>.
+ * Clase utilitaria que provee observadores preconstruidos de
+ * {@link TransportStrategy.TransportResult}, siguiendo el
+ * <a href="https://en.wikipedia.org/wiki/Observer_pattern">patrón Observer</a>.
  *
  * <p>
- * Each static factory method returns a {@code Consumer<TransportResult>} that
- * reacts to transport updates in a specific way. Consumers can be composed
- * (via {@link Consumer#andThen(Consumer)}) to build pipelines of independent
- * observers without coupling them to one another.
+ * Cada método estático devuelve un
+ * {@code Consumer<TransportResult>} que reacciona a actualizaciones
+ * de transporte de una manera específica.
+ * Los consumidores pueden componerse mediante
+ * {@link Consumer#andThen(Consumer)} para encadenar observadores
+ * independientes sin acoplarlos entre sí.
  * </p>
  *
  * <p>
- * Following the same functional paradigm used throughout this package, all
- * observers are expressed as lambdas. Any state they require (e.g. alert
- * thresholds) is captured immutably in the closure at construction time,
- * keeping each observer self-contained and free of shared mutable state.
+ * Siguiendo el mismo paradigma funcional utilizado a lo largo de éste
+ * paquete, todos los observadores se expresan mediante lambdas.
+ * Cualquier estado requerido (por ejemplo umbrales de alerta) es
+ * capturado de manera inmutable dentro del closure al momento de su
+ * construcción, manteniendo cada observador autocontenido y libre de
+ * estado mutable compartido.
  * </p>
  *
  * <p>
- * All observers delegate to the singleton {@link Logger} for output, inheriting
- * its thread-safety guarantee and consistent color-coded formatting.
+ * Todos los observadores delegan la salida al singleton
+ * {@link Logger}, heredando sus garantías de thread-safety y formato
+ * consistente codificado por colores.
  * </p>
  */
 public class TransportObservers {
@@ -31,22 +36,24 @@ public class TransportObservers {
     private static final Logger logger = Logger.getInstance();
 
     /**
-     * Returns an observer that prints a complete summary of every
-     * {@link TransportStrategy.TransportResult} it receives to standard output.
+     * Devuelve un observador que imprime a stdout un resumen completo de
+     * cada {@link TransportStrategy.TransportResult} recibido.
      *
      * <p>
-     * Output is formatted across two lines:
+     * La salida se formatea en dos lineas:
      * </p>
      * <ul>
-     *   <li>A header line at {@link Severity#INFO} (gray) identifying the
-     *       transport mode by name.</li>
-     *   <li>A detail line at {@link Severity#DEBUG} (green) reporting the
-     *       distance in kilometres, cost in the application's base currency
-     *       unit, and estimated time of arrival in minutes.</li>
+     * <li>Una linea de cabecera con severidad
+     * {@link Severity#INFO} (gris) identificando el modo de
+     * transporte mediante su nombre.</li>
+     * <li>Una linea de detalle con severidad
+     * {@link Severity#DEBUG} (verde) reportando distancia en
+     * kilómetros, costo en la unidad monetaria base de la
+     * aplicación y tiempo estimado de llegada en minutos.</li>
      * </ul>
      *
-     * @return a {@code Consumer<TransportResult>} that logs every result
-     *         unconditionally
+     * @return un {@code Consumer<TransportResult>} que registra cada
+     *         resultado de manera incondicional
      */
     public static Consumer<TransportStrategy.TransportResult> consolePrinter() {
         return result -> {
@@ -57,33 +64,40 @@ public class TransportObservers {
     }
 
     /**
-     * Returns a threshold-aware observer that emits warnings or errors when a
-     * {@link TransportStrategy.TransportResult} breaches the supplied limits.
+     * Devuelve un observador sensible a umbrales que emite advertencias
+     * o errores cuando un {@link TransportStrategy.TransportResult}
+     * excede los límites especificados.
      *
      * <p>
-     * Both thresholds are captured in the returned lambda's closure at
-     * construction time and remain constant for the lifetime of the observer:
+     * Ambos umbrales son capturados dentro del closure de la lambda
+     * devuelta al momento de su construcción y permanecen constantes
+     * durante toda la vida del observador:
      * </p>
      * <ul>
-     *   <li>If {@code result.cost()} exceeds {@code costThreshold}, a
-     *       {@link Severity#WARN} (yellow) message is emitted.</li>
-     *   <li>If {@code result.eta()} exceeds {@code etaThreshold}, a
-     *       {@link Severity#ERROR} (red) message is emitted.</li>
+     * <li>Si {@code result.cost()} excede
+     * {@code costThreshold}, se emite un mensaje con severidad
+     * {@link Severity#WARN} (amarillo).</li>
+     * <li>Si {@code result.eta()} excede
+     * {@code etaThreshold}, se emite un mensaje con severidad
+     * {@link Severity#ERROR} (rojo).</li>
      * </ul>
      *
      * <p>
-     * Both conditions are evaluated independently; a single result may trigger
-     * zero, one, or both alerts.
+     * Ambas condiciones son evaluadas de manera independiente; un mismo
+     * resultado puede disparar cero, una o ambas alertas.
      * </p>
      *
-     * @param costThreshold the maximum acceptable journey cost (exclusive) in
-     *                      the application's base currency unit; results above
-     *                      this value trigger a cost warning
-     * @param etaThreshold  the maximum acceptable estimated time of arrival
-     *                      (exclusive) in minutes; results above this value
-     *                      trigger a critical ETA error
-     * @return a {@code Consumer<TransportResult>} that silently passes results
-     *         within the thresholds and logs alerts for those that exceed them
+     * @param costThreshold el costo máximo aceptable del viaje
+     *                      (exclusivo) expresado en la unidad monetaria
+     *                      base de la aplicación; resultados superiores
+     *                      a éste valor disparan una advertencia de costo
+     * @param etaThreshold  el tiempo máximo aceptable de llegada
+     *                      estimada (exclusivo) expresado en minutos;
+     *                      resultados superiores a éste valor disparan
+     *                      un error crítico de ETA
+     * @return un {@code Consumer<TransportResult>} que ignora
+     *         silenciosamente resultados dentro de los umbrales y
+     *         registra alertas para aquellos que los excedan
      */
     public static Consumer<TransportStrategy.TransportResult> alertObserver(double costThreshold, int etaThreshold) {
         return result -> {

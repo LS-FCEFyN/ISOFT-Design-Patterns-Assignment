@@ -1,36 +1,39 @@
 package com.isoft;
 
 /**
- * Functional interface defining the contract for a transport strategy
- * within the application.
+ * Interfaz funcional que define el contrato para una estrategia de
+ * transporte dentro de la aplicación.
  *
  * <p>
- * Implementations of this interface represent a specific mode of transport
- * (e.g. car, bike, train) and are responsible for computing cost, distance,
- * and estimated arrival time for a given journey.
+ * Implementaciones de ésta interfaz representan un modo específico de
+ * transporte (por ejemplo automóvil, bicicleta o tren) y son responsables
+ * de calcular costo, distancia y tiempo estimado de llegada para un viaje
+ * determinado.
  * </p>
  *
  * <p>
- * This interface is intended for use with the
- * <a href="https://en.wikipedia.org/wiki/Strategy_pattern">Strategy
- * pattern</a>,
- * allowing transport modes to be selected and swapped at runtime. Being a
- * {@link FunctionalInterface}, strategies can be expressed concisely as
- * lambdas or method references.
+ * Ésta interfaz está destinada a ser utilizada junto al
+ * <a href="https://en.wikipedia.org/wiki/Strategy_pattern">patrón
+ * Strategy</a>,
+ * permitiendo seleccionar e intercambiar modos de transporte en tiempo de
+ * ejecución.
+ * Al ser una {@link FunctionalInterface}, las estrategias pueden expresarse
+ * de manera concisa mediante lambdas o referencias a métodos.
  * </p>
  */
 @FunctionalInterface
 public interface TransportStrategy {
 
     /**
-     * An immutable value object aggregating the results of a transport
-     * strategy computation.
+     * Objeto inmutable que agrupa los resultados producidos por
+     * el cálculo de una estrategia de transporte.
      *
-     * @param name     a human-readable name identifying the transport mode
-     * @param cost     the total cost of the journey in the application's
-     *                 base currency unit
-     * @param distance the total distance of the journey in kilometres
-     * @param eta      the estimated time of arrival in minutes
+     * @param name     nombre legible utilizado para identificar el modo de
+     *                 transporte
+     * @param cost     costo total del viaje expresado en la unidad monetaria
+     *                 base de la aplicación
+     * @param distance distancia total del viaje en kilómetros
+     * @param eta      tiempo estimado de llegada en minutos
      */
     public record TransportResult(
             String name,
@@ -40,11 +43,11 @@ public interface TransportStrategy {
     }
 
     /**
-     * Computes and returns the result of this transport strategy for a
-     * given journey.
+     * Calcula y devuelve el resultado de ésta estrategia de transporte
+     * para un viaje determinado.
      *
-     * @return a {@link TransportResult} containing the name, cost, distance,
-     *         and ETA for the journey
+     * @return un {@link TransportResult} conteniendo nombre, costo,
+     *         distancia y ETA del viaje
      */
     TransportResult compute(double distanceKm);
 }
