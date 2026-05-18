@@ -10,74 +10,85 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 
 /**
- * Observable subject that periodically recomputes a {@link TransportStrategy}
- * and notifies all registered observers with the latest snapshot.
+ * Sujeto observable que recomputa periódicamente una
+ * {@link TransportStrategy} y notifica a todos los observadores
+ * registrados con el estado más reciente.
  *
  * <p>
- * Implements the <em>Subject</em> role of the
- * <a href="https://en.wikipedia.org/wiki/Observer_pattern">Observer pattern</a>.
- * Observers are plain {@code Consumer<TransportStrategy.TransportResult>}
- * instances, consistent with the functional style used throughout this package.
+ * Implementa el rol de <em>Subject</em> del
+ * <a href="https://en.wikipedia.org/wiki/Observer_pattern">patrón Observer</a>.
+ * Los observadores son simples instancias de
+ * {@code Consumer<TransportStrategy.TransportResult>}, manteniendo
+ * coherencia con el estilo funcional utilizado a lo largo de éste
+ * paquete.
  * </p>
  *
  * <p>
- * The monitor runs on a dedicated {@link ScheduledExecutorService} so the
- * update loop does not block the calling thread. The active strategy can be
- * swapped at any time via {@link #setStrategy(TransportStrategy)} without
- * stopping the loop.
+ * El monitor se ejecuta sobre un
+ * {@link ScheduledExecutorService} dedicado para que el bucle de
+ * actualización no bloquee al hilo invocador.
+ * La estrategia activa puede intercambiarse en cualquier momento
+ * mediante {@link #setStrategy(TransportStrategy)} sin detener el
+ * bucle.
  * </p>
  *
  * <p>
- * Observers are stored in a {@link CopyOnWriteArrayList} so that
- * {@link #subscribe} and {@link #unsubscribe} calls made from threads other
- * than the scheduler thread are safe without explicit locking.
+ * Los observadores se almacenan dentro de un
+ * {@link CopyOnWriteArrayList} para que llamadas a
+ * {@link #subscribe} y {@link #unsubscribe} realizadas desde hilos
+ * distintos al hilo del scheduler sean seguras sin necesidad de
+ * sincronización explicita.
  * </p>
  */
 public class TransportMonitor {
 
-    // ── Fields ───────────────────────────────────────────────────────────────
+    // ── Campos ───────────────────────────────────────────────────────────────
 
     private static final Logger logger = Logger.getInstance();
 
-    /** Fixed distance (km) used for every strategy computation. */
+    /** Distancia fija (km) utilizada para cada cálculo de estrategia. */
     private static final double FIXED_DISTANCE_KM = 10.0;
 
-    /** Thread-safe list of registered observers. */
-    private final List<Consumer<TransportStrategy.TransportResult>> observers =
-            new CopyOnWriteArrayList<>();
+    /** Lista thread-safe de observadores registrados. */
+    private final List<Consumer<TransportStrategy.TransportResult>> observers = new CopyOnWriteArrayList<>();
 
-    /** The currently active strategy; volatile so swaps are immediately visible. */
+    /**
+     * Estrategia actualmente activa; volatile para que cambios sean visibles
+     * inmediatamente.
+     */
     private volatile TransportStrategy strategy;
 
-    /** Scheduler that drives the periodic update loop. */
-    private final ScheduledExecutorService scheduler =
-            Executors.newSingleThreadScheduledExecutor(r -> {
-                Thread t = new Thread(r, "transport-monitor");
-                t.setDaemon(true); // don't prevent JVM shutdown
-                return t;
-            });
+    /** Scheduler responsable de ejecutar el bucle periódico de actualización. */
+    private final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor(r -> {
+        Thread t = new Thread(r, "transport-monitor");
+        t.setDaemon(true); // no impedir que la JVM finalice
+        return t;
+    });
 
-    /** Handle to the running task, kept so it can be cancelled if needed. */
+    /**
+     * Referencia a la tarea en ejecución, conservada para poder cancelarla si fuese
+     * necesario.
+     */
     private ScheduledFuture<?> task;
 
     // ── Constructor ──────────────────────────────────────────────────────────
 
     /**
-     * Creates a new monitor with the given initial strategy.
+     * Crea un nuevo monitor utilizando la estrategia inicial especificada.
      *
-     * @param initialStrategy the strategy to use before any call to
-     *                        {@link #setStrategy(TransportStrategy)}
+     * @param initialStrategy estrategia a utilizar antes de cualquier llamada
+     *                        a {@link #setStrategy(TransportStrategy)}
      */
     public TransportMonitor(TransportStrategy initialStrategy) {
         this.strategy = initialStrategy;
     }
 
-    // ── Observer management ──────────────────────────────────────────────────
+    // ── Gestión de observadores ──────────────────────────────────────────────
 
     /**
-     * Adds an observer to the notification list.
+     * Añade un observador a la lista de notificaciones.
      *
-     * @param observer the consumer to register; ignored if {@code null}
+     * @param observer consumidor a registrar; ignorado si es {@code null}
      */
     public void subscribe(Consumer<TransportStrategy.TransportResult> observer) {
         if (observer != null) {
@@ -86,48 +97,53 @@ public class TransportMonitor {
     }
 
     /**
-     * Removes a previously registered observer.
+     * Elimina un observador previamente registrado.
      *
-     * @param observer the consumer to remove; no-op if not present
+     * @param observer consumidor a eliminar; no realiza ninguna acción si
+     *                 no se encuentra registrado
      */
     public void unsubscribe(Consumer<TransportStrategy.TransportResult> observer) {
         observers.remove(observer);
     }
 
-    // ── Strategy hot-swap ────────────────────────────────────────────────────
+    // ── Intercambio dinámico de estrategia ───────────────────────────────────
 
     /**
-     * Replaces the active transport strategy without interrupting the running loop.
-     * The next scheduled tick will use the new strategy.
+     * Reemplaza la estrategia de transporte activa sin interrumpir el
+     * bucle en ejecución.
+     * La próxima iteración programada utilizará la nueva estrategia.
      *
-     * @param newStrategy the strategy to activate
+     * @param newStrategy estrategia a activar
      */
     public void setStrategy(TransportStrategy newStrategy) {
         this.strategy = newStrategy;
         logger.logInfo.accept("Strategy changed to: " + newStrategy.compute(FIXED_DISTANCE_KM).name());
     }
 
-    // ── Loop control ─────────────────────────────────────────────────────────
+    // ── Control del bucle ────────────────────────────────────────────────────
 
     /**
-     * Starts the periodic update loop.
+     * Inicia el bucle periódico de actualización.
      *
      * <p>
-     * Each tick:
+     * Cada iteración:
      * <ol>
-     *   <li>Calls {@code strategy.compute()} to obtain a fresh
-     *       {@link TransportStrategy.TransportResult}.</li>
-     *   <li>Notifies every registered observer with that result.</li>
+     * <li>Invoca {@code strategy.compute()} para obtener un nuevo
+     * {@link TransportStrategy.TransportResult}.</li>
+     * <li>Notifica a cada observador registrado con dicho resultado.</li>
      * </ol>
      * </p>
      *
      * <p>
-     * If {@code maxCycles} is greater than zero the loop stops automatically
-     * after that many ticks; pass {@code 0} for an indefinite loop.
+     * Si {@code maxCycles} es mayor que cero, el bucle se detiene
+     * automáticamente luego de esa cantidad de iteraciones;
+     * pasar {@code 0} produce un bucle indefinido.
      * </p>
      *
-     * @param intervalMs the delay between ticks in milliseconds (must be &gt; 0)
-     * @param maxCycles  maximum number of ticks before auto-stop; {@code 0} = unlimited
+     * @param intervalMs intervalo entre iteraciones expresado en
+     *                   milisegundos (debe ser &gt; 0)
+     * @param maxCycles  cantidad máxima de iteraciones antes de detenerse
+     *                   automáticamente; {@code 0} = ilimitado
      */
     public void start(long intervalMs, int maxCycles) {
         logger.logInfo.accept("TransportMonitor started"
@@ -151,7 +167,8 @@ public class TransportMonitor {
     }
 
     /**
-     * Cancels the scheduled update task. Already-running ticks are not interrupted.
+     * Cancela la tarea programada de actualización.
+     * Iteraciones ya iniciadas no son interrumpidas.
      */
     public void stop() {
         if (task != null && !task.isCancelled()) {
@@ -161,15 +178,18 @@ public class TransportMonitor {
     }
 
     /**
-     * Returns {@code true} if the loop is currently running.
+     * Devuelve {@code true} si el bucle se encuentra actualmente en
+     * ejecución.
      */
     public boolean isRunning() {
         return task != null && !task.isCancelled() && !task.isDone();
     }
 
-    // ── Private helpers ──────────────────────────────────────────────────────
+    // ── Helpers privados ────────────────────────────────────────────────────
 
-    /** Delivers {@code result} to every registered observer in insertion order. */
+    /**
+     * Entrega {@code result} a cada observador registrado en orden de inserción.
+     */
     private void notifyObservers(TransportStrategy.TransportResult result) {
         for (Consumer<TransportStrategy.TransportResult> observer : observers) {
             observer.accept(result);
