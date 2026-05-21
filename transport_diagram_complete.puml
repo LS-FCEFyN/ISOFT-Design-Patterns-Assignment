@@ -1,0 +1,107 @@
+@startuml
+title Diagrama de clases - Patrones de Diseño (Transporte)
+
+' ────────────────────────────────────────────────────────
+' SINGLETON: Logger
+' ────────────────────────────────────────────────────────
+
+class Logger <<singleton>> {
+  -RESET: String
+  -FORMATTER: DateTimeFormatter
+  -LazyHolder
+  +getInstance(): Logger
+  +formatTimestamp: Function
+  +formatMessage: BiFunction
+  -print(severity, message): void
+  +logDebug: Consumer
+  +logInfo: Consumer
+  +logWarning: Consumer
+  +logError: Consumer
+  +at(severity): Consumer
+}
+
+enum Severity <<enumeration>> {
+  DEBUG
+  INFO
+  WARN
+  ERROR
+  ---
+  color: String
+}
+
+' ────────────────────────────────────────────────────────
+' STRATEGY PATTERN: TransportStrategy
+' ────────────────────────────────────────────────────────
+
+interface TransportStrategy <<interface>> {
+  +compute(distanceKm): TransportResult
+}
+
+class TransportResult <<record>> {
+  +name: String
+  +cost: double
+  +distance: double
+  +eta: int
+}
+
+' ────────────────────────────────────────────────────────
+' OBSERVER PATTERN: TransportMonitor
+' ────────────────────────────────────────────────────────
+
+class TransportMonitor {
+  -FIXED_DISTANCE_KM: double
+  -observers: List
+  -strategy: TransportStrategy
+  -scheduler: ScheduledExecutorService
+  -task: ScheduledFuture
+  +TransportMonitor(initialStrategy)
+  +subscribe(observer): void
+  +unsubscribe(observer): void
+  +setStrategy(newStrategy): void
+  +start(intervalMs, maxCycles): void
+  +stop(): void
+  +isRunning(): boolean
+  -notifyObservers(result): void
+}
+
+' ────────────────────────────────────────────────────────
+' OBSERVER FACTORY: TransportObservers
+' ────────────────────────────────────────────────────────
+
+class TransportObservers {
+  -logger: Logger
+  +{static}consolePrinter(): Consumer
+  +{static}alertObserver(costThreshold, etaThreshold): Consumer
+}
+
+' ────────────────────────────────────────────────────────
+' APPLICATION ENTRY POINT: App
+' ────────────────────────────────────────────────────────
+
+class App {
+  +{static}main(args): void
+}
+
+' ────────────────────────────────────────────────────────
+' RELACIONES
+' ────────────────────────────────────────────────────────
+
+Logger --> Severity : uses (encodes color)
+Logger "1" -- "0..*" Consumer : logDebug,logInfo,logWarning,logError
+
+TransportStrategy --> TransportResult : returns result
+
+TransportMonitor --> TransportStrategy : manages active strategy
+TransportMonitor --> Logger : logs via singleton
+TransportMonitor "1" --> "0..*" Consumer : notifies observers
+
+TransportObservers --> Logger : delegates to singleton
+TransportObservers --> TransportStrategy : understands result structure
+TransportObservers --> TransportResult : consumes in observers
+
+App --> Logger : obtains singleton
+App --> TransportStrategy : creates lambdas
+App --> TransportMonitor : creates and controls
+App --> TransportObservers : uses factory methods
+
+@enduml
