@@ -1,125 +1,125 @@
 # ISOFT Design Patterns — Functional Programming
 
-A Java application demonstrating three classic Gang of Four (GoF) design patterns implemented with a functional programming paradigm. The domain is a transport monitoring system that computes cost, distance, and ETA for different transit modes.
+Una aplicación Java que demuestra tres patrones de diseño clásicos de la Gang of Four (GoF) implementados con un paradigma de programación funcional. El dominio es un sistema de monitoreo de transporte que calcula el costo, la distancia y el ETA para diferentes modos de tránsito.
 
 ## Project Structure
 
 ```
-ISOFT-Design-Patterns-FP/
+ISOFT-Design-Patterns/
 ├── src/
-│   ├── App.java                      # Entry point and application driver
+│   ├── App.java                      # Punto de entrada y driver de la aplicación
 │   └── com/isoft/
-│       ├── Logger.java               # Singleton — color-coded, thread-safe logger
-│       ├── Severity.java             # Log level enum with ANSI color codes
-│       ├── TransportMonitor.java     # Observer subject with scheduled executor
-│       ├── TransportObservers.java   # Observer factory methods
-│       └── TransportStrategy.java   # Strategy interface + TransportResult record
-├── transport_uml_class_diagram.html  # Interactive Mermaid UML class diagram
-└── Assignment.pdf                    # Original project requirements
+│       ├── Logger.java               # Singleton — logger thread-safe
+│       ├── Severity.java             # Enum de nivel de log con códigos de color ANSI
+│       ├── TransportMonitor.java     # Subject de Observer con un executor programado
+│       ├── TransportObservers.java   # Métodos fábrica de Observer
+│       └── TransportStrategy.java    # Interfaz de Strategy + record TransportResult
+├── transport_uml_class_diagram.html  # Diagrama de clases de UML interactivo en Mermaid
+└── Assignment.pdf                    # Requerimientos originales del proyecto
 ```
 
 ## Design Patterns
 
 ### 1. Singleton — `Logger`
 
-`Logger` provides a single, globally accessible, thread-safe logger using the **Initialization-on-demand Holder** idiom. The instance is created lazily on first access with no synchronization overhead.
+`Logger` proporciona una instancia única de logger, accesible globalmente y segura para hilos (thread-safe) utilizando el idioma **Initialization-on-demand Holder**. La instancia se crea de forma "lazily" al primer acceso sin sobrecarga de sincronización.
 
-Functional elements:
-- `formatTimestamp` — pure function `() → String`
-- `formatMessage` — pure function `(Severity, String) → String`
-- `logDebug`, `logInfo`, `logWarning`, `logError` — pre-built `Consumer<String>` instances
-- `at(Severity)` — higher-order function that returns a `Consumer<String>` for dynamic severity selection
+Elementos funcionales:
+- `formatTimestamp` — función pura `() → String`
+- `formatMessage` — función pura `(Severity, String) → String`
+- `logDebug`, `logInfo`, `logWarning`, `logError` — instancias de `Consumer<String>` preconstruidas
+- `at(Severity)` — función de orden superior que devuelve un `Consumer<String>` para la selección dinámica de severity
 
 ### 2. Strategy — `TransportStrategy`
 
-`TransportStrategy` is a `@FunctionalInterface` whose single method `compute(double distanceKm)` returns an immutable `TransportResult` record. Three concrete strategies are defined as lambdas in `App.main()`:
+`TransportStrategy` es una `@FunctionalInterface` cuyo único método `compute(double distanceKm)` devuelve un record `TransportResult` inmutable. Se definen tres estrategias concretas como lambdas en `App.main()`:
 
-| Strategy   | Cost            | Speed   |
-|------------|-----------------|---------|
-| `bus`      | Fixed $10       | 30 km/h |
-| `taxi`     | Random $50–$150 | 60 km/h |
-| `bicycle`  | Free ($0)       | 15 km/h |
+| Strategy   |       Cost         |   Speed    |
+|------------|--------------------|------------|
+| `bus`      | Fijo $10           | 30 km/h    |
+| `taxi`     | Aleatorio $50–$150 | 60 km/h    |
+| `bicycle`  | Gratis ($0)        | 15 km/h    |
 
-`TransportResult` is a Java **record** with fields `name`, `cost`, `distance`, and `eta`. The active strategy can be hot-swapped at runtime via `TransportMonitor.setStrategy()` without stopping the monitor.
+`TransportResult` es un record de Java con los campos `name`, `cost`, `distance` y `eta`. La estrategia activa se puede intercambiar en caliente (hot-swapped) en tiempo de ejecución a través de `TransportMonitor.setStrategy()` sin detener el monitor.
 
 ### 3. Observer — `TransportMonitor` + `TransportObservers`
 
-`TransportMonitor` is the **Subject**. It schedules periodic strategy computations and notifies all registered observers:
+`TransportMonitor` es el **Subject**. Programa cálculos periódicos de la estrategia y notifica a todos los observers registrados:
 
-- Observers are `Consumer<TransportResult>` — no separate observer interface is needed
-- `subscribe(Consumer<TransportResult>)` — registers an observer
-- `unsubscribe(Consumer<TransportResult>)` — removes an observer
-- `start(intervalMs, maxCycles)` — begins periodic execution; auto-stops after `maxCycles` if > 0
-- `stop()` — cancels the monitor
+- Los observers son `Consumer<TransportResult>` — no se necesita una interfaz de observer separada
+- `subscribe(Consumer<TransportResult>)` — registra un observer
+- `unsubscribe(Consumer<TransportResult>)` — elimina un observer
+- `start(intervalMs, maxCycles)` — comienza la ejecución periódica; se detiene automáticamente después de `maxCycles` si es > 0
+- `stop()` — cancela el monitor
 
-`TransportObservers` provides two factory methods:
+`TransportObservers` proporciona dos métodos fábrica:
 
 | Observer | Behavior |
 |----------|----------|
-| `consolePrinter()` | Logs transport name, cost, distance, and ETA on every cycle |
-| `alertObserver(costThreshold, etaThreshold)` | Emits WARN if cost exceeds threshold; ERROR if ETA exceeds threshold |
+| `consolePrinter()`  | Registra `name`, `cost`, `distance` y `ETA` del transporte en cada ciclo |
+| `alertObserver(costThreshold, etaThreshold)` | Emite un `WARN` si el `cost` supera el umbral; un `ERROR` si el `ETA` supera el umbral |
 
-Thresholds are captured immutably in a closure — no mutable state required.
+Los umbrales se capturan de forma inmutable en un closure — no se requiere estado mutable.
 
 ## Requirements
 
-- Java 14 or later (uses `record` syntax from JDK 14)
-- No external dependencies — standard library only
+- Java 14 o posterior (usa la sintaxis de `record` de la JDK 14)
+- Sin dependencias externas — solo la biblioteca estándar
 
 ## Build & Run
 
-**Compile:**
+**Compilar:**
 ```bash
 mkdir -p bin
 javac -d bin src/App.java src/com/isoft/*.java
 ```
 
-**Run:**
+**Ejecutar:**
 ```bash
 java -cp bin App
 ```
 
-**Interactive controls (while the monitor is running):**
+**Controles interactivos (mientras el monitor está ejecutándose):**
 
-| Input | Action                     |
-|-------|----------------------------|
-| `1`   | Switch to Taxi strategy    |
-| `2`   | Switch to Bus strategy     |
-| `3`   | Switch to Bicycle strategy |
-| `q`   | Quit                       |
+| Input | Action                             |
+|-------|------------------------------------|
+| `1`   | Cambiar a la estrategia de Taxi    |
+| `2`   | Cambiar a la estrategia de Bus     |
+| `3`   | Cambiar a la estrategia de Bicycle |
+| `q`   | Salir                              |
 
-The monitor runs for 10 cycles (1 second each) and stops automatically, or stops immediately on `q`.
+El monitor se ejecuta durante 10 ciclos (de 1 segundo cada uno) y se detiene automáticamente, o se detiene inmediatamente al presionar `q`.
 
 ## UML Class Diagram
 
-Open `transport_uml_class_diagram.html` in a browser to view an interactive Mermaid diagram showing all classes, interfaces, fields, methods, and relationships.
+Abrí `transport_uml_class_diagram.html` en un navegador para ver un diagrama interactivo de Mermaid que muestra todas las clases, interfaces, campos, métodos y relaciones.
 
 ## Concurrency Notes
 
-Thread safety is achieved without traditional locking:
+La seguridad de hilos (thread safety) se logra sin el uso de bloqueos tradicionales:
 
-- `volatile` on the active strategy — atomic visibility for hot-swaps
-- `CopyOnWriteArrayList` for the observer list — safe concurrent add/remove/iterate
-- `AtomicInteger` for the cycle counter
-- `ScheduledExecutorService` with a single daemon thread — does not block JVM shutdown
-- `synchronized print()` in `Logger` — serialized console output across threads
+- `volatile` en la estrategia activa — visibilidad atómica para intercambios en caliente (hot-swaps)
+- `CopyOnWriteArrayList` para la lista de observers — operaciones seguras y concurrentes de añadir, eliminar e iterar (add/remove/iterate)
+- `AtomicInteger` para el contador de ciclos
+- `ScheduledExecutorService` con un solo hilo demonio (daemon thread) — no bloquea el apagado de la JVM
+- `synchronized print()` en `Logger` — salida por consola serializada a través de los hilos
 
 ## Discussion Questions
 
-### 1. Singleton — Why is a global logger a good Singleton candidate? What problems can it cause in multithreaded apps? How would you solve them?
+### 1. Singleton — ¿Por qué un logger global es un buen candidato para Singleton? ¿Qué problemas puede causar en aplicaciones multihilo (multithreaded)? ¿Cómo los resolverías?
 
-A global logger is a natural Singleton candidate because there is a single output destination (the console) and the entire application should share the same format, colors, and log level configuration. Having multiple instances adds no value and produces inconsistent output.
+Un logger global es un candidato natural para un Singleton porque hay un único destino de salida (la consola) y toda la aplicación debería compartir el mismo formato, colores y configuración de niveles de log. Tener múltiples instancias no aporta valor y genera una salida inconsistente.
 
-In multithreaded applications, the main risk is a **write race condition**: if two threads call `print()` simultaneously, their messages can interleave on the console and become unreadable. There is also the classic initialization risk: if two threads call `getInstance()` at the same time before the instance exists, both could create their own copy, breaking the uniqueness guarantee.
+En aplicaciones multihilo, el riesgo principal es una condición de carrera de escritura (write race condition): si dos hilos llaman a `print()` simultáneamente, sus mensajes pueden entrelazarse en la consola y volverse ilegibles. También existe el clásico riesgo de inicialización: si dos hilos llaman a `getInstance()` al mismo tiempo antes de que la instancia exista, ambos podrían crear su propia copia, rompiendo la garantía de unicidad.
 
-This implementation solves both with two mechanisms:
+Esta implementación resuelve ambos problemas mediante dos mecanismos:
 
-- **Initialization-on-demand Holder**: the instance is created inside a private static inner class (`Holder`). The JVM guarantees that class loading happens exactly once, with no need for `synchronized` or `volatile` on `getInstance()`. This eliminates the double-initialization problem.
-- **Synchronized `print()`**: the write method is declared `synchronized`, ensuring only one thread writes to the console at a time and preventing interleaved messages.
+- **Initialization-on-demand Holder**: la instancia se crea dentro de una clase interna estática privada (`Holder`). La JVM garantiza que la carga de la clase ocurra exactamente una vez, sin necesidad de usar `synchronized` o `volatile` en `getInstance()`. Esto elimina el problema de la doble inicialización.
+- **Synchronized `print()`**: el método de escritura se declara como `synchronized`, asegurando que solo un hilo escriba en la consola a la vez y evitando mensajes entrelazados.
 
-### 2. Strategy — Would you modify or create to add a new transport mode? What SOLID principle does this illustrate?
+### 2. Strategy — ¿Modificarías o crearías código para agregar un nuevo modo de transporte? ¿Qué principio SOLID ilustra esto?
 
-To add a new transport mode (e.g., subway), you only need to **create** a new lambda implementing `TransportStrategy.compute()`. No existing class needs to be modified — not `TransportMonitor`, not `TransportObservers`, not any existing strategy.
+Para agregar un nuevo modo de transporte (por ejemplo, un subway), solo necesitas crear una nueva lambda que implemente `TransportStrategy.compute()`. No es necesario modificar ninguna clase existente — ni `TransportMonitor`, ni `TransportObservers`, ni ninguna estrategia existente.
 
 ```java
 TransportStrategy subway = distanceKm -> new TransportResult(
@@ -131,21 +131,21 @@ TransportStrategy subway = distanceKm -> new TransportResult(
 monitor.setStrategy(subway);
 ```
 
-This is the **Open/Closed Principle (OCP)** from SOLID: the system is *open* for extension (new strategies can be added) but *closed* for modification (existing code is untouched). `TransportStrategy` as a functional interface is precisely that extension point.
+Este es el **Principio de Abierto/Cerrado (Open/Closed Principle - OCP)** de SOLID: el sistema está abierto para la extensión (se pueden agregar nuevas estrategias) pero cerrado para la modificación (el código existente no se toca). `TransportStrategy` como interfaz funcional es precisamente ese punto de extensión.
 
-### 3. Observer — What happens if an observer is slow to process a notification? How would you decouple the subject's speed from the observer's?
+### 3. Observer — ¿Qué pasa si un observer es lento al procesar una notificación? ¿Cómo desacoplarías la velocidad del subject de la del observer?
 
-In the current implementation, observers are notified **synchronously** inside the `ScheduledExecutorService` thread. If one observer is slow, it blocks all subsequent notifications and can delay or miss the next monitor cycle.
+En la implementación actual, los observers son notificados de forma sincrónica dentro del hilo del `ScheduledExecutorService`. Si un observer es lento, bloquea todas las notificaciones subsiguientes y puede retrasar o hacer que se pierda el próximo ciclo del monitor.
 
-Two approaches to decouple their speeds:
+Dos enfoques para desacoplar sus velocidades:
 
-- **Async dispatch per observer**: instead of calling the consumer directly, submit each notification as a task to a dedicated `ExecutorService`. Each observer processes at its own pace without blocking the subject.
-- **Event queue**: the subject enqueues results into a `BlockingQueue` and each observer drains that queue in its own thread. A slow observer buffers messages rather than blocking the subject. A bounded queue with a drop policy (drop oldest or drop newest) prevents unbounded memory growth.
+- **Despacho asincrónico por observer (Async dispatch)**: en lugar de llamar al consumer directamente, se envía cada notificación como una tarea a un `ExecutorService` dedicado. Cada observer procesa a su propio ritmo sin bloquear al subject.
+- **Cola de eventos (Event queue)**: el subject encola los resultados en una `BlockingQueue` y cada observer consume de esa cola en su propio hilo. Un observer lento almacena los mensajes en un búfer en lugar de bloquear al subject. Una cola acotada (bounded queue) con una política de descarte (descartar el más viejo o el más nuevo) evita el crecimiento desmedido de la memoria.
 
-The queue approach also isolates the subject from observer failures: if an observer throws, the subject never notices.
+El enfoque de la cola también aísla al subject de las fallas del observer: si un observer lanza una excepción, el subject nunca se entera.
 
-### 4. Integration — `ConsolePrinter` and `AlertObserver` use the same logger differently. Why is this possible without them knowing each other?
+### 4. Integración — `ConsolePrinter` y `AlertObserver` usan el mismo logger de forma diferente. ¿Por qué es posible esto sin que se conozcan entre sí?
 
-Both observers reach the logger through `Logger.getInstance()`. Because of the Singleton pattern, that call always returns the same instance regardless of who calls it. `ConsolePrinter` uses `logInfo` and `logDebug`; `AlertObserver` uses `logWarning` and `logError` — two completely different uses of the same object, with neither knowing the other exists.
+Ambos observers acceden al logger a través de `Logger.getInstance()`. Debido al patrón Singleton, esa llamada siempre devuelve la misma instancia independientemente de quién la llame. `ConsolePrinter` usa `logInfo` y `logDebug`; `AlertObserver` usa `logWarning` y `logError` — dos usos completamente diferentes del mismo objeto, sin que ninguno sepa que el otro existe.
 
-This shows the benefit of combining Singleton with Observer: the logger is a globally accessible shared resource, while the observers are independent units that only know their own logic. Decoupling is preserved because no observer references another; both simply consume the same public API of the Singleton.
+Esto muestra el beneficio de combinar Singleton con Observer: el logger es un recurso compartido accesible globalmente, mientras que los observers son unidades independientes que solo conocen su propia lógica. Se preserva el desacoplamiento porque ningún observer referencia a otro; ambos simplemente consumen la misma API pública del Singleton.
